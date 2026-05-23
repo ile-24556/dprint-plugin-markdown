@@ -1,0 +1,23 @@
+!! should handle blockquote immediately after list marker !!
+- > foo foo
+- > bar bar
+baz baz
+
+* >>> - >>> foo
+
+- > &gt; foo
+- &gt; > foo
+- > \> foo
+- \> > foo
+
+[expect]
+- > foo foo
+- > bar bar
+  > baz baz
+
+* >>> - >>> foo
+
+- > &gt; foo
+- &gt; > foo
+- > \> foo
+- \> > foo

@@ -321,9 +321,22 @@ fn gen_block_quote(block_quote: &BlockQuote, context: &mut Context) -> PrintItem
     // add a > for any string that is on the start of a line
     // Note: This is extremely hacky
     let mut indent_level = 0;
-    for print_item in gen_nodes(&block_quote.children, context).iter() {
+    for (i, print_item) in gen_nodes(&block_quote.children, context).iter().enumerate() {
       match print_item {
-        PrintItem::String(text) => {
+        PrintItem::String(text) if i == 0 => {
+          // at the beginning of a block quote, '>' is necessary
+          // even if it is not at the start of a line i.e. the start of a list item.
+          items.push_optional_path(context.get_memoized_rc_path(MemoizedRcPathKind::FinishIndent(indent_level)));
+          items.push_sc(sc!(">"));
+          // avoid inserting space in nested block quote markers (`> > foo`).
+          if text.text != ">" {
+            items.push_space();
+          }
+          items
+            .push_optional_path(context.get_memoized_rc_path(MemoizedRcPathKind::StartWithSingleIndent(indent_level)));
+          items.push_item(PrintItem::String(text));
+        }
+        PrintItem::String(text) if i != 0 => {
           items.push_condition(if_true(
             "angleBracketIfStartOfLine",
             condition_resolvers::is_start_of_line(),
@@ -331,7 +344,10 @@ fn gen_block_quote(block_quote: &BlockQuote, context: &mut Context) -> PrintItem
               let mut items = PrintItems::new();
               items.push_optional_path(context.get_memoized_rc_path(MemoizedRcPathKind::FinishIndent(indent_level)));
               items.push_string(">".repeat(block_quote_count));
-              items.push_space();
+              // avoid inserting space in nested block quote markers (`> > foo`).
+              if text.text != ">" {
+                items.push_space();
+              }
               items.push_optional_path(
                 context.get_memoized_rc_path(MemoizedRcPathKind::StartWithSingleIndent(indent_level)),
               );
